@@ -1,0 +1,223 @@
+service: recolo-monolith
+app: recolo
+org: freddiedunlop
+
+plugins:
+  - serverless-plugin-optimize
+  - serverless-offline
+
+custom:
+  optimize:
+    ignore:
+      - serverless_sdk
+  profiles:
+    dev: recolo-dev
+    preprod: recolo-preprod
+  node_envs:
+    dev: production
+    preprod: production
+    production: production
+  talent_domains:
+    dev: dev.recologroup.com
+    preprod: preprod.recologroup.com
+    production: recologroup.com
+  agency_domains:
+    dev: agency-dev.recologroup.com
+    preprod: agency-preprod.recologroup.com
+    production: agency.recologroup.com
+  defaultStage: dev
+  modulr_url:
+    dev: https://api-sandbox.modulrfinance.com/api-sandbox
+    production: https://api.modulrfinance.com/api
+  modulr_api_key:
+    dev: ${ssm:/modulr/api/key/dev~true}
+    production: ${ssm:/modulr/api/key/production~true}
+  modulr_secret:
+    dev: ${ssm:/modulr/api/secret/dev~true}
+    production: ${ssm:/modulr/api/secret/production~true}
+  modulr_customer_id:
+    dev: C120DTN6
+    production: xxxxxxxx
+  webhook_secret:
+    dev: ${ssm:/modulr/web-hook/secret/dev~true}
+    production: ${ssm:/modulr/web-hook/secret/dev~true}
+  webhook:
+    dev:
+#      payin: https://lb9hqfhsec.execute-api.us-west-2.amazonaws.com/dev/payment/modulr/payin
+      payin:
+        !Join
+          - ''
+          - - 'https://'
+            - !Ref ApiGatewayRestApi
+            - '.execute-api.${self:provider.region}.amazonaws.com/${self:provider.stage}/payment/modulr/payin'
+#      payout: https://lb9hqfhsec.execute-api.us-west-2.amazonaws.com/dev/payment/modulr/payout
+      payout:
+        !Join
+          - ''
+          - - 'https://'
+            - !Ref ApiGatewayRestApi
+            - '.execute-api.${self:provider.region}.amazonaws.com/${self:provider.stage}/payment/modulr/payout'
+    production:
+#      payin: https://ssuf42sfjj.execute-api.us-west-2.amazonaws.com/production/payment/modulr/payin
+      payin:
+        !Join
+          - ''
+          - - 'https://'
+            - !Ref ApiGatewayRestApi
+            - '.execute-api.${self:provider.region}.amazonaws.com/${self:provider.stage}/payment/modulr/payin'
+#      payout: https://ssuf42sfjj.execute-api.us-west-2.amazonaws.com/production/payment/modulr/payin
+      payout:
+        !Join
+          - ''
+          - - 'https://'
+            - !Ref ApiGatewayRestApi
+            - '.execute-api.${self:provider.region}.amazonaws.com/${self:provider.stage}/payment/modulr/payout'
+  modulr_root_account_number:
+    dev: 70320603
+    production: xxxxxxxx
+  modulr_root_sort_code:
+    dev: 000000
+    production: xxxxxxxx
+  modulr_root_account_id:
+    dev: A120G69S
+    production: xxxxxxxx
+  modulr_product_code:
+    dev: O1200001
+    production: xxxxxx
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  memorySize: 320
+  timeout: 30
+  region: us-west-2
+  stage: ${opt:stage, self:custom.defaultStage}
+#  profile: ${self:custom.profiles.${opt:stage, self:custom.defaultStage}}
+#  iamRoleStatements:
+#    - Effect: "Allow"
+#      Action:
+#        - "ses:SendEmail"
+#        - "ses:SendRawEmail"
+#      Resource: "*"
+  environment:
+    NODE_ENV: ${self:custom.node_envs.${opt:stage, self:custom.defaultStage}}
+    STAGE: ${opt:stage, self:custom.defaultStage}
+    AWS_S3_BUCKET_NAME: ${ssm:/s3/invoices/name/${opt:stage, self:custom.defaultStage}~true}
+    AWS_S3_TALENT_MEDIA_BUCKET_NAME: ${ssm:/s3/talent_media/name/${opt:stage, self:custom.defaultStage}~true}
+    AWS_S3_AGENCY_MEDIA_BUCKET_NAME: ${ssm:/s3/agency_media/name/${opt:stage, self:custom.defaultStage}~true}
+    AWS_S3_PROJECT_FILES_BUCKET_NAME: ${ssm:/s3/project_files/name/${opt:stage, self:custom.defaultStage}~true}
+    AWS_TARGET_REGION: ${ssm:/env/aws/region/${opt:stage, self:custom.defaultStage}~true}
+    AWS_APP_ACCESS_KEY_ID: ${param:aws_access_key}
+    AWS_APP_SECRET_ACCESS_KEY: ${param:aws_secret_key}
+    AWS_EMAIL_DOMAIN: ${ssm:/ses/domain/${opt:stage, self:custom.defaultStage}~true}
+    AWS_EMAIL_CONFIGURATION_SET_NAME: ${ssm:/ses/configuration_set/${opt:stage, self:custom.defaultStage}~true}
+    AWS_S3_AGENCY_TASKS_QUEUE_NAME: ${ssm:/sqs/agency-tasks/name/${opt:stage, self:custom.defaultStage}~true}
+    AWS_WITHDRAW_QUEUE_NAME: ${ssm:/sqs/withdraw-tasks/name/${opt:stage, self:custom.defaultStage}~true}
+    AWS_ACCOUNT_ID: ${ssm:/env/aws/account_id/${opt:stage, self:custom.defaultStage}~true}
+    DB_HOST: ${ssm:/rds/domain/${opt:stage, self:custom.defaultStage}~true}
+    DB_PORT: ${ssm:/rds/port/${opt:stage, self:custom.defaultStage}~true}
+    DB_DATABASE: ${ssm:/rds/db/name/${opt:stage, self:custom.defaultStage}~true}
+    DB_USERNAME: ${ssm:/rds/db/username/${opt:stage, self:custom.defaultStage}~true}
+    DB_PASSWORD: ${ssm:/rds/db/password/${opt:stage, self:custom.defaultStage}~true}
+    DB_SYNCHRONISE: false
+    AUTH0_DOMAIN: ${ssm:/auth0/domain/${opt:stage, self:custom.defaultStage}~true}
+    AUTH0_MANAGEMENT_APP_CLIENT_ID: ${ssm:/auth0/server_app/client_id/${opt:stage, self:custom.defaultStage}~true}
+    AUTH0_MANAGEMENT_APP_CLIENT_SECRET: ${ssm:/auth0/server_app/client_secret/${opt:stage, self:custom.defaultStage}~true}
+    AUTH0_TALENT_CLIENT_ID: ${ssm:/auth0/talent_app/client_id/${opt:stage, self:custom.defaultStage}~true}
+    AUTH0_TALENT_API_IDENTIFIER: ${ssm:/auth0/talent_api/identifier/${opt:stage, self:custom.defaultStage}~true}
+    AUTH0_TALENT_CONNECTION: ${ssm:/auth0/talent_connection/name/${opt:stage, self:custom.defaultStage}~true}
+    AUTH0_AGENCY_CLIENT_ID: ${ssm:/auth0/agency_app/client_id/${opt:stage, self:custom.defaultStage}~true}
+    AUTH0_AGENCY_API_IDENTIFIER: ${ssm:/auth0/agency_api/identifier/${opt:stage, self:custom.defaultStage}~true}
+    AUTH0_AGENCY_CONNECTION: ${ssm:/auth0/agency_connection/name/${opt:stage, self:custom.defaultStage}~true}
+    AUTH0_ADMIN_CLIENT_ID: ${ssm:/auth0/admin_app/client_id/${opt:stage, self:custom.defaultStage}~true}
+    AUTH0_ADMIN_CLIENT_SECRET: ${ssm:/auth0/admin_app/client_secret/${opt:stage, self:custom.defaultStage}~true}
+    AUTH0_ADMIN_API_IDENTIFIER: ${ssm:/auth0/admin_api/identifier/${opt:stage, self:custom.defaultStage}~true}
+    AUTH0_ADMIN_CONNECTION: ${ssm:/auth0/admin_connection/name/${opt:stage, self:custom.defaultStage}~true}
+    APP_TALENT_CLIENT_APP_DOMAIN: https://${self:custom.talent_domains.${opt:stage, self:custom.defaultStage}}
+    APP_AGENCY_CLIENT_APP_DOMAIN: https://${self:custom.agency_domains.${opt:stage, self:custom.defaultStage}}
+    ADMIN_COOKIES_SECRET: ${param:admin_cookies_secret}
+    MODULR_BASE_URL: ${self:custom.modulr_url.${opt:stage, self:custom.defaultStage}}
+    MODULT_API_KEY: ${self:custom.modulr_api_key.${opt:stage, self:custom.defaultStage}}
+    MODULR_SECRET: ${self:custom.modulr_secret.${opt:stage, self:custom.defaultStage}}
+    CUSTOMER_ID: ${self:custom.modulr_customer_id.${opt:stage, self:custom.defaultStage}}
+    MODULR_WEB_HOOK_SECRET: ${self:custom.webhook_secret.${opt:stage, self:custom.defaultStage}}
+    PAYIN_WEBHOOK_URL: ${self:custom.webhook.${opt:stage, self:custom.defaultStage}.payin}
+    PAYOUT_WEBHOOK_URL: ${self:custom.webhook.${opt:stage, self:custom.defaultStage}.payout}
+    MODULR_ROOT_ACCOUNT_NUMBER: ${self:custom.modulr_root_account_number.${opt:stage, self:custom.defaultStage}}
+    MODULR_ROOT_SORT_CODE: ${self:custom.modulr_root_sort_code.${opt:stage, self:custom.defaultStage}}
+    MODULR_ROOT_ACCOUNT_ID: ${self:custom.modulr_root_account_id.${opt:stage, self:custom.defaultStage}}
+    SETUP_WEB_HOOKS: true
+    MODULR_PRODUCT_CODE: self:custom.modulr_product_code.${opt:stage, self:custom.defaultStage}
+# @TODO: add subnets in different availability zones
+  vpc:
+    securityGroupIds:
+      - ${ssm:/vpc/security-group/web/${opt:stage, self:custom.defaultStage}~true}
+    subnetIds:
+      - ${ssm:/vpc/subnet/private/${opt:stage, self:custom.defaultStage}~true}
+      - ${ssm:/vpc/subnet/private/secondary/${opt:stage, self:custom.defaultStage}~true}
+#      - ${ssm:/vpc/subnet/public/${opt:stage, self:custom.defaultStage}~true}
+
+functions:
+#  adminApp:
+#    image: 366497882863.dkr.ecr.us-west-2.amazonaws.com/recolo-dev:latest@
+#    events:
+#      - http:
+#          method: any
+#          # @TODO: split into env variable
+#          path: /admin
+
+  app_v1:
+    handler: dist/main-serverless.http
+    events:
+      - http:
+          method: any
+          path: /{proxy+}
+
+  invoiceEventsHandler_v1:
+    handler: dist/main-serverless.invoices
+    events:
+      - sqs:
+          arn: ${ssm:/sqs/invoice/arn/${opt:stage, self:custom.defaultStage}~true}
+          batchSize: 1
+
+  emailReceiveHandler_v1:
+    handler: dist/main-serverless.emailReceive
+    events:
+      - sqs:
+          arn: ${ssm:/sqs/email-receive/arn/${opt:stage, self:custom.defaultStage}~true}
+          batchSize: 1
+
+  emailDeliveryEventsHandler_v1:
+    handler: dist/main-serverless.emailEvents
+    events:
+      - sqs:
+          arn: ${ssm:/sqs/email-events/arn/${opt:stage, self:custom.defaultStage}~true}
+          batchSize: 1
+
+  talentAvatarUploadingEventhandler_v1:
+    handler: dist/main-serverless.avatarUpload
+    events:
+      - sqs:
+          arn: ${ssm:/sqs/talent-media/arn/${opt:stage, self:custom.defaultStage}~true}
+          batchSize: 1
+
+  agencyAvatarUploadingEventHandler_v1:
+    handler: dist/main-serverless.agencyAvatarUpload
+    events:
+      - sqs:
+          arn: ${ssm:/sqs/agency-media/arn/${opt:stage, self:custom.defaultStage}~true}
+          batchSize: 1
+
+  agencyTasksHandler_v1:
+    handler: dist/main-serverless.agencyTasks
+    events:
+      - sqs:
+          arn: ${ssm:/sqs/agency-tasks/arn/${opt:stage, self:custom.defaultStage}~true}
+          batchSize: 1
+
+  withdrawTaskshandler_v1:
+    handler: dist/main-serverless.withdrawTasks
+    events:
+      - sqs:
+          arn: ${ssm:/sqs/withdraw-tasks/arn/${opt:stage, self:custom.defaultStage}~true}
+          batchSize: 1
