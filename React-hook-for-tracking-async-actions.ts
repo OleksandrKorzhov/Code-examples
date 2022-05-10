@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import _ from 'lodash';
+import merge from 'lodash.merge';
 
 type TrackableFn = (...args: any[]) => Promise<any>;
 
@@ -45,7 +45,7 @@ export const useTrackable = <T extends TrackableFn>(fn: T): Trackable<T> => {
     [fn]
   );
 
-  return _.merge<T, TrackingProps>(fnWrapper as T, {
+  return merge<T, TrackingProps>(fnWrapper as T, {
     initial: status === TrackableStatus.Initial,
     inProgress: status === TrackableStatus.InProgress,
     completed: status === TrackableStatus.Completed,
